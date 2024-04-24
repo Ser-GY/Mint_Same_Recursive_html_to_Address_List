@@ -123,10 +123,11 @@ def mint_nfts_for_addresses(addresses, html_path):
             print("Broadcast failed, sleeping for 30 seconds...")
             time.sleep(30)
 
-    # Write minted addresses to JSON file after all addresses processed
-    with open('minted_addresses.json', 'w') as json_file:
-        json.dump(minted_addresses, json_file, indent=4)
-        print("Minted addresses saved to 'minted_addresses.json'.")
+        # Write minted addresses to JSON file after each successful broadcast
+        json_file_path = '/root/shibes05/Airdrop/minted_addresses.json'
+        with open(json_file_path, 'w') as json_file:
+            json.dump(minted_addresses, json_file, indent=4)
+            print(f"Minted addresses saved to '{json_file_path}'.")
 
     # Print minted addresses for debugging
     print("Minted Addresses:")
