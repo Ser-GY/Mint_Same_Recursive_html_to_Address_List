@@ -62,6 +62,30 @@ def read_doge_addresses_from_csv(csv_file_path):
         return []  # Return an empty list if there's an error reading the file
     return addresses
 
+def check_utxos_available():
+    """
+    Checks if there are available UTXOs for broadcasting.
+
+    Returns:
+    bool: True if UTXOs are available, False otherwise.
+    """
+    while True:
+        sync_command = "node . wallet sync"
+        result_sync = subprocess.run(sync_command, shell=True, capture_output=True, text=True)
+        print("Output from sync command:")
+        print(result_sync.stdout)
+
+        if result_sync.stderr:
+            print("Error in sync command:")
+            print(result_sync.stderr)
+            continue
+
+        if "No UTXOs ready for broadcast" not in result_sync.stdout:
+            return True  # UTXOs available, return True
+
+        print("No UTXOs ready for broadcast, waiting...")
+        time.sleep(30)  # Wait for 30 seconds before checking again
+
 def mint_nfts_for_addresses(addresses, html_path):
     minted_addresses = {}
     total_addresses = len(addresses)
@@ -73,28 +97,10 @@ def mint_nfts_for_addresses(addresses, html_path):
             print("Invalid Dogecoin address:", address)
             continue
 
-        # Sync wallet to check for available UTXOs
-        sync_command = "node . wallet sync"
-        result_sync = subprocess.run(sync_command, shell=True, capture_output=True, text=True)
-        print("Output from sync command:")
-        print(result_sync.stdout)
-
-        if result_sync.stderr:
-            print("Error in sync command:")
-            print(result_sync.stderr)
-            continue
-
         # Check if there are available UTXOs
-        utxo_count = 0
-        utxo_search = re.search(r"Total UTXOs: (\d+)", result_sync.stdout)
-        if utxo_search:
-            utxo_count = int(utxo_search.group(1))
-            print(f"Total UTXOs: {utxo_count}")
-
-        if utxo_count == 0:
+        while not check_utxos_available():
             print("No UTXOs ready for broadcast, waiting...")
             time.sleep(30)
-            continue
 
         # Construct and execute the mint command using subprocess
         mint_command = f"node . mint {sanitized_address} {html_path}"
@@ -124,25 +130,24 @@ def mint_nfts_for_addresses(addresses, html_path):
             time.sleep(30)
 
         # Write minted addresses to JSON file after each successful broadcast
-        json_file_path = '/root/shibes05/Airdrop/minted_addresses.json'
+        json_file_path = '/root/shibes05/Airdrop/minted_addresses.json'  # JSON file path - Change it where you want it written to
         with open(json_file_path, 'w') as json_file:
             json.dump(minted_addresses, json_file, indent=4)
             print(f"Minted addresses saved to '{json_file_path}'.")
 
+        # Add a time buffer between mint operations
+        time.sleep(42)  # Wait for 5 minutes (300 seconds) before the next mint operation
+
     # Print minted addresses for debugging
-    print("Minted Addresses:")
-    print(minted_addresses)
+    # print("Minted Addresses:")
+    # print(minted_addresses)
 
 def main():
     # Configuration
-    csv_file_path = '/root/shibes05/Airdrop/Airdrop.csv'  # CSV file path
+    csv_file_path = '/root/shibes05/Airdrop/Airdrop.csv'  # CSV file path - Change it to yours
     addresses = read_doge_addresses_from_csv(csv_file_path)
 
-    # Print the number of addresses
-    total_addresses = len(addresses)
-    print(f"Total Dogecoin addresses to process: {total_addresses}")
-
-    html_path = '/root/shibes05/Airdrop/Airdrop.html'  # HTML file path
+    html_path = '/root/shibes05/Airdrop/Airdrop.html'  # HTML file path - Change it to yours
 
     mint_nfts_for_addresses(addresses, html_path)
 
